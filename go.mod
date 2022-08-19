@@ -3,6 +3,7 @@ module github.com/Pedro-Pessoa/go-utilities
 go 1.19
 
 require (
+	github.com/go-chi/chi/v5 v5.0.7
 	github.com/hashicorp/go-syslog v1.0.0
 	github.com/stretchr/testify v1.8.0
 	go.uber.org/zap v1.22.0
