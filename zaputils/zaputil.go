@@ -15,7 +15,7 @@ const (
 
 var (
 	// ErrorEmptyLoggerName will be sent when trying to create a logger with an empty name
-	ErrorEmptyLoggerName = errors.New("zaputil: the logger name can not be empty")
+	ErrorEmptyLoggerName = errors.New("zaputils: the logger name can not be empty")
 )
 
 func prettyConfig() zap.Config {
