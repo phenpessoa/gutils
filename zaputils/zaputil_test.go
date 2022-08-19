@@ -29,7 +29,7 @@ func TestLoggers(t *testing.T) {
 				c.EncoderConfig.EncodeTime = nil
 				return c
 			}(),
-			"",
+			"foo",
 			true,
 		},
 		{
