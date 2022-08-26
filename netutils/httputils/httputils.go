@@ -124,7 +124,7 @@ var methods = [9]string{
 // The caller can still write to w after calling AddAllowHeader.
 //
 // https://www.rfc-editor.org/rfc/rfc7231#section-6.5.5
-func AddAllowHeader(r *chi.Mux, w http.ResponseWriter, req *http.Request) {
+func AddAllowHeader(r chi.Router, w http.ResponseWriter, req *http.Request) {
 	rctx := chi.RouteContext(req.Context())
 
 	routePath := rctx.RoutePath
