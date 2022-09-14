@@ -1,7 +1,6 @@
 package cache
 
 import (
-	"errors"
 	"fmt"
 	"strconv"
 	"sync"
@@ -12,122 +11,141 @@ import (
 )
 
 func TestCache(t *testing.T) {
-	assert := assert.New(t)
-
 	for _, tc := range []struct {
-		cacheFor  time.Duration
-		testCache func(*Cache[string, any]) error
+		name     string
+		cacheFor time.Duration
+		f        func(*Cache[string, any]) error
 	}{
 		{
+			"get set delete",
 			0,
-			func(s *Cache[string, any]) error {
-				s.Set("foo", 1)
-				v, ok := s.Get("foo")
+			func(c *Cache[string, any]) error {
+				c.Set("foo", 1)
+				v, ok := c.Get("foo")
 				if !ok {
-					return errors.New("key foo not found in Cache")
+					return fmt.Errorf("key foo not found in Cache")
 				}
 
 				if v != 1 {
 					return fmt.Errorf("expected foo value to be 1 but got %v instead", 1)
 				}
 
-				s.Delete("foo")
+				c.Delete("foo")
 
-				_, ok = s.Get("foo")
+				_, ok = c.Get("foo")
 
 				if ok {
-					return errors.New("key foo found in Cache")
+					return fmt.Errorf("key foo found in Cache")
 				}
 
 				return nil
 			},
 		},
 		{
+			"concurrent reads and writes",
 			0,
-			func(s *Cache[string, any]) error {
+			func(c *Cache[string, any]) error {
 				wg := new(sync.WaitGroup)
-				resultChan := make(chan [3]any, 10)
-				wg.Add(10)
-				for i := 0; i < 10; i++ {
+				wg.Add(200)
+				for i := 0; i < 100; i++ {
 					go func(i int) {
 						defer wg.Done()
-						s.Set(strconv.Itoa(i), i)
+						c.Set(strconv.Itoa(i), i)
+					}(i)
+
+					go func(i int) {
+						defer wg.Done()
+						c.Get(strconv.Itoa(i))
 					}(i)
 				}
 				wg.Wait()
-
-				wg.Add(10)
-				for i := 0; i < 10; i++ {
-					go func(i int) {
-						defer wg.Done()
-						v, ok := s.Get(strconv.Itoa(i))
-						resultChan <- [3]any{v, ok, i}
-					}(i)
-				}
-				wg.Wait()
-				close(resultChan)
-
-				for a := range resultChan {
-					v := a[0]
-					ok := a[1].(bool)
-					i := a[2].(int)
-
-					if !ok {
-						return fmt.Errorf("key %d not found", i)
-					}
-
-					if v != i {
-						return fmt.Errorf("expected foo value to be %d but got %v instead", i, v)
-					}
-				}
-
 				return nil
 			},
 		},
 		{
-			50 * time.Millisecond,
-			func(s *Cache[string, any]) error {
-				s.Set("foo", 1)
-				time.Sleep(80 * time.Millisecond)
-				_, ok := s.Get("foo")
+			"test gc",
+			25 * time.Millisecond,
+			func(c *Cache[string, any]) error {
+				c.Set("foo", 1)
+				time.Sleep(60 * time.Millisecond)
+				_, ok := c.Get("foo")
 				if ok {
-					return errors.New("key foo found in Cache")
+					return fmt.Errorf("key foo found in Cache")
 				}
 				return nil
 			},
 		},
 		{
-			50 * time.Millisecond,
-			func(s *Cache[string, any]) error {
-				s.Set("foo", 1)
-				s.Set("foo", 1)
-				time.Sleep(80 * time.Millisecond)
-				_, ok := s.Get("foo")
-				if ok {
-					return errors.New("key foo found in Cache")
-				}
-				return nil
-			},
-		},
-		{
+			"test get set",
 			0,
-			func(s *Cache[string, any]) error {
-				mu := new(sync.Mutex)
-				mu2 := new(sync.Mutex)
+			func(c *Cache[string, any]) error {
+				i := new(int)
+				i2 := new(int)
 
-				muCache := s.GetSet("foo", mu)
-				muCache2 := s.GetSet("foo", mu2)
+				iGetSet := c.GetSet("foo", i)
+				i2GetSet := c.GetSet("foo", i2)
 
-				assert.Same(mu, muCache)
-				assert.Same(mu, muCache2)
-				assert.NotSame(mu2, muCache)
-				assert.NotSame(mu2, muCache2)
+				if iGetSet != i {
+					return fmt.Errorf("iGetSet is not equal to i")
+				}
+
+				if iGetSet == i2 {
+					return fmt.Errorf("iGetSet is equal to i2")
+				}
+
+				if i2GetSet != i {
+					return fmt.Errorf("i2GetSet is not equal to i")
+				}
+
+				if i2GetSet == i2 {
+					return fmt.Errorf("i2GetSet is equal to i2")
+				}
+				return nil
+			},
+		},
+		{
+			"test wipe and len",
+			0,
+			func(c *Cache[string, any]) error {
+				c.Set("foo", 1)
+				c.Set("bar", 2)
+
+				if c.Len() != 2 {
+					return fmt.Errorf("cache len is not 2")
+				}
+
+				c.Wipe()
+
+				if c.Len() != 0 {
+					return fmt.Errorf("cache len is not 0")
+				}
+
+				return nil
+			},
+		},
+		{
+			"test contains",
+			0,
+			func(c *Cache[string, any]) error {
+				ok := c.Contains("foo")
+				if ok {
+					return fmt.Errorf("key foo found in cache")
+				}
+
+				c.Set("foo", 1)
+
+				ok = c.Contains("foo")
+				if !ok {
+					return fmt.Errorf("key foo not found in cache")
+				}
+
 				return nil
 			},
 		},
 	} {
-		s := NewCache[string, any](tc.cacheFor)
-		err := tc.testCache(s)
-		assert.NoError(err)
+		t.Run(tc.name, func(t *testing.T) {
+			c := NewCache[string, any](tc.cacheFor)
+			assert.NoError(t, tc.f(c))
+		})
 	}
 }
