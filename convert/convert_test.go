@@ -8,8 +8,6 @@ import (
 )
 
 func TestToInt64(t *testing.T) {
-	assert := assert.New(t)
-
 	for _, tc := range []struct {
 		name  string
 		input any
@@ -37,7 +35,17 @@ func TestToInt64(t *testing.T) {
 		{"empty-[]byte", []byte{}, 0},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			assert.Equal(tc.want, ToInt64(tc.input))
+			assert.Equal(t, tc.want, ToInt64(tc.input))
 		})
 	}
+}
+
+func TestStringToByteSliceUnsafe(t *testing.T) {
+	str := "foo, bar, baz, qux, quux"
+	assert.Equal(t, []byte(str), StringToByteSliceUnsafe(str))
+}
+
+func TestByteSliceToStringUnsafe(t *testing.T) {
+	bs := []byte("foo, bar, baz, qux, quux")
+	assert.Equal(t, "foo, bar, baz, qux, quux", ByteSliceToStringUnsafe(bs))
 }
