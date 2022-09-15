@@ -107,7 +107,7 @@ func FileConfig() zap.Config {
 	cfg.EncoderConfig.TimeKey = "timestamp"
 	cfg.EncoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
 	cfg.ErrorOutputPaths = []string{logFile, "stderr"}
-	cfg.OutputPaths = []string{logFile}
+	cfg.OutputPaths = []string{logFile, "stderr"}
 	return cfg
 }
 
