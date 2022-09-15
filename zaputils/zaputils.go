@@ -74,9 +74,7 @@ func NewCustomLogger(name, facility string, priority syslog.Priority, cConfig, f
 		var sysLogger syslog.Syslogger
 		sysLogger, err = syslog.NewLogger(priority, facility, name)
 		if err != nil {
-			if err != nil {
-				return nil, fmt.Errorf("zaputils: failed to open sys config output paths: %w", err)
-			}
+			return nil, fmt.Errorf("zaputils: failed to open sys config output paths: %w", err)
 		}
 
 		sWriter := zapcore.Lock(zapcore.AddSync(sysLogger))
