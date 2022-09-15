@@ -3,6 +3,7 @@ package convert
 import (
 	"strconv"
 	"time"
+	"unsafe"
 )
 
 // ToInt converts from to an int64.
@@ -49,4 +50,22 @@ func ToInt64(from any) int64 {
 	default:
 		return 0
 	}
+}
+
+// StringToByteSliceUnsafe converts a string to a byte slice
+// without copying, making this substantially faster
+// and less expensive than doing a direct convertion.
+//
+// StringToByteSliceUnsafe uses the unsafe package.
+func StringToByteSliceUnsafe(str string) []byte {
+	return *(*[]byte)(unsafe.Pointer(&str))
+}
+
+// ByteSliceToStringUnsafe converts a byte slice to a string
+// without copying, making this substantially faster
+// and less expensive than doing a direct convertion.
+//
+// ByteSliceToStringUnsaf uses the unsafe package.
+func ByteSliceToStringUnsafe(bs []byte) string {
+	return *(*string)(unsafe.Pointer(&bs))
 }
