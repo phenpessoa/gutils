@@ -56,6 +56,9 @@ func ToInt64(from any) int64 {
 // without copying, making this substantially faster
 // and less expensive than doing a direct convertion.
 //
+// Since Go strings are immutable, the bytes returned by StringToByteSliceUnsafe
+// must not be modified.
+//
 // StringToByteSliceUnsafe uses the unsafe package.
 func StringToByteSliceUnsafe(str string) []byte {
 	return *(*[]byte)(unsafe.Pointer(&str))
