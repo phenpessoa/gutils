@@ -7,11 +7,23 @@ import (
 	syslog "github.com/hashicorp/go-syslog"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
+	"gopkg.in/natefinch/lumberjack.v2"
 )
 
-func TestProdLogger(t *testing.T) {
+func TestLoggers(t *testing.T) {
+	assert := assert.New(t)
+
 	_, err := NewProdLogger("prod_logger", "USER", syslog.LOG_DEBUG)
-	assert.NoError(t, err)
+	assert.NoError(err)
+
+	_, err = NewRotatingProdLogger("prod_logger", "USER", syslog.LOG_DEBUG)
+	assert.NoError(err)
+
+	_, err = NewRotatingCustomLogger("prod_logger", "USER", syslog.LOG_DEBUG, ConsoleConfig(), FileConfig(), SysConfig(), nil)
+	assert.Error(err)
+
+	_, err = NewRotatingCustomLogger("prod_logger", "USER", syslog.LOG_DEBUG, ConsoleConfig(), FileConfig(), SysConfig(), &lumberjack.Logger{})
+	assert.NoError(err)
 }
 
 func TestCustomLogger(t *testing.T) {
@@ -25,6 +37,7 @@ func TestCustomLogger(t *testing.T) {
 		sConfig   zap.Config
 		facility  string
 		priority  syslog.Priority
+		lj        *lumberjack.Logger
 		shouldErr bool
 	}{
 		{
@@ -38,6 +51,7 @@ func TestCustomLogger(t *testing.T) {
 			zap.Config{},
 			"",
 			syslog.LOG_INFO,
+			&lumberjack.Logger{},
 			true,
 		},
 		{
@@ -51,6 +65,7 @@ func TestCustomLogger(t *testing.T) {
 			zap.Config{},
 			"",
 			syslog.LOG_INFO,
+			&lumberjack.Logger{},
 			true,
 		},
 		{
@@ -64,6 +79,7 @@ func TestCustomLogger(t *testing.T) {
 			zap.Config{},
 			"",
 			syslog.LOG_INFO,
+			nil,
 			true,
 		},
 		{
@@ -73,6 +89,7 @@ func TestCustomLogger(t *testing.T) {
 			SysConfig(),
 			"INVALID FACILITY",
 			syslog.LOG_INFO,
+			nil,
 			runtime.GOOS != "windows", // this test only tests properly in non windows systems
 		},
 		{
@@ -82,11 +99,22 @@ func TestCustomLogger(t *testing.T) {
 			SysConfig(),
 			"USER",
 			syslog.LOG_INFO,
+			nil,
+			false,
+		},
+		{
+			"valid lj",
+			ConsoleConfig(),
+			FileConfig(),
+			SysConfig(),
+			"USER",
+			syslog.LOG_INFO,
+			&lumberjack.Logger{},
 			false,
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			_, err := NewCustomLogger("test_logger", tc.facility, tc.priority, tc.cConfig, tc.fConfig, tc.sConfig)
+			_, err := newCustomLogger("test_logger", tc.facility, tc.priority, tc.cConfig, tc.fConfig, tc.sConfig, tc.lj)
 			if tc.shouldErr {
 				assert.Error(t, err)
 				return
