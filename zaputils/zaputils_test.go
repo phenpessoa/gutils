@@ -1,125 +1,148 @@
 package zaputils
 
 import (
+	"os"
 	"runtime"
 	"testing"
 
-	syslog "github.com/hashicorp/go-syslog"
-	"github.com/stretchr/testify/assert"
-	"go.uber.org/zap"
-	"gopkg.in/natefinch/lumberjack.v2"
+	gsyslog "github.com/hashicorp/go-syslog"
+	"go.uber.org/zap/zapcore"
 )
 
-func TestLoggers(t *testing.T) {
-	assert := assert.New(t)
-
-	_, err := NewProdLogger("prod_logger", "USER", syslog.LOG_DEBUG)
-	assert.NoError(err)
-
-	_, err = NewRotatingProdLogger("prod_logger", "USER", syslog.LOG_DEBUG)
-	assert.NoError(err)
-
-	_, err = NewRotatingCustomLogger("prod_logger", "USER", syslog.LOG_DEBUG, ConsoleConfig(), FileConfig(), SysConfig(), nil)
-	assert.Error(err)
-
-	_, err = NewRotatingCustomLogger("prod_logger", "USER", syslog.LOG_DEBUG, ConsoleConfig(), FileConfig(), SysConfig(), &lumberjack.Logger{})
-	assert.NoError(err)
+func TestMain(m *testing.M) {
+	code := m.Run()
+	defer os.Exit(code)
+	os.Remove(logFile)
+	os.Remove(errLogFile)
 }
 
-func TestCustomLogger(t *testing.T) {
-	cfg := zap.NewDevelopmentConfig()
-	cfg.OutputPaths = []string{` ~ ^ ////// \\\\\\\\ invalid path`}
-
+func TestLoggers(t *testing.T) {
 	for _, tc := range []struct {
-		name      string
-		cConfig   zap.Config
-		fConfig   zap.Config
-		sConfig   zap.Config
-		facility  string
-		priority  syslog.Priority
-		lj        *lumberjack.Logger
-		shouldErr bool
+		f    func() error
+		name string
 	}{
 		{
-			"invalid console config",
-			func() zap.Config {
-				cfg := zap.NewDevelopmentConfig()
-				cfg.OutputPaths = []string{` ~ ^ ////// \\\\\\\\ invalid path`}
-				return cfg
-			}(),
-			zap.Config{},
-			zap.Config{},
-			"",
-			syslog.LOG_INFO,
-			&lumberjack.Logger{},
-			true,
+			f: func() error {
+				_, f, err := NewProdLogger("prod_logger", "USER", gsyslog.LOG_DEBUG)
+				defer f()
+				return err
+			},
+			name: "NewProdLogger",
 		},
 		{
-			"invalid error output path",
-			func() zap.Config {
-				cfg := zap.NewDevelopmentConfig()
-				cfg.ErrorOutputPaths = []string{` ~ ^ ////// \\\\\\\\ invalid path`}
-				return cfg
-			}(),
-			zap.Config{},
-			zap.Config{},
-			"",
-			syslog.LOG_INFO,
-			&lumberjack.Logger{},
-			true,
-		},
-		{
-			"invalid file logger",
-			ConsoleConfig(),
-			func() zap.Config {
-				cfg := zap.NewDevelopmentConfig()
-				cfg.OutputPaths = []string{` ~ ^ ////// \\\\\\\\ invalid path`}
-				return cfg
-			}(),
-			zap.Config{},
-			"",
-			syslog.LOG_INFO,
-			nil,
-			true,
-		},
-		{
-			"invalid sys logger",
-			ConsoleConfig(),
-			FileConfig(),
-			SysConfig(),
-			"INVALID FACILITY",
-			syslog.LOG_INFO,
-			nil,
-			runtime.GOOS != "windows", // this test only tests properly in non windows systems
-		},
-		{
-			"valid",
-			ConsoleConfig(),
-			FileConfig(),
-			SysConfig(),
-			"USER",
-			syslog.LOG_INFO,
-			nil,
-			false,
-		},
-		{
-			"valid lj",
-			ConsoleConfig(),
-			FileConfig(),
-			SysConfig(),
-			"USER",
-			syslog.LOG_INFO,
-			&lumberjack.Logger{},
-			false,
+			f: func() error {
+				_, f, err := NewRotatingProdLogger("prod_logger", "USER", gsyslog.LOG_DEBUG)
+				defer f()
+				return err
+			},
+			name: "NewRotatingProdLogger",
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			_, err := newCustomLogger("test_logger", tc.facility, tc.priority, tc.cConfig, tc.fConfig, tc.sConfig, tc.lj)
-			if tc.shouldErr {
-				assert.Error(t, err)
-				return
+			if err := tc.f(); err != nil {
+				t.Errorf("%s failed with: %s", tc.name, err)
 			}
-			assert.NoError(t, err)
+		})
+	}
+}
+
+func TestCustomLogger(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		cfg     Config
+		wantErr bool
+	}{
+		{
+			name:    "empty console output path",
+			cfg:     Config{},
+			wantErr: true,
+		},
+		{
+			name: "empty file output path",
+			cfg: Config{
+				ConsoleOutputPaths: []string{"stderr"},
+			},
+			wantErr: true,
+		},
+		{
+			name: "invalid console output path",
+			cfg: Config{
+				ConsoleOutputPaths: []string{` ~ ^ ////// \\\\\\\\ invalid path`},
+				FileOutputPaths:    []string{logFile},
+			},
+			wantErr: true,
+		},
+		{
+			name: "invalid error output path",
+			cfg: Config{
+				ConsoleOutputPaths: []string{"stderr"},
+				FileOutputPaths:    []string{logFile},
+				ErrorOutputPaths:   []string{` ~ ^ ////// \\\\\\\\ invalid path`},
+			},
+			wantErr: true,
+		},
+		{
+			name: "invalid file output path",
+			cfg: Config{
+				ConsoleOutputPaths: []string{"stderr"},
+				FileOutputPaths:    []string{` ~ ^ ////// \\\\\\\\ invalid path`},
+			},
+			wantErr: true,
+		},
+		{
+			name: "invalid sys log facility",
+			cfg: Config{
+				ConsoleOutputPaths: []string{"stderr"},
+				FileOutputPaths:    []string{logFile},
+				SysLogFacility:     "INVALID FACILITY",
+			},
+			// this test only works on non windows systems
+			wantErr: runtime.GOOS != "windows",
+		},
+		{
+			name:    "valid non rotating logger",
+			cfg:     NewProdConfig("test_non_rotating_logger", "USER", gsyslog.LOG_INFO),
+			wantErr: false,
+		},
+		{
+			name:    "valid rotating logger",
+			cfg:     NewRotatingProdConfig("test_rotating_logger", "USER", gsyslog.LOG_INFO),
+			wantErr: false,
+		},
+		{
+			name: "valid non rotating pseudo development logger",
+			cfg: func() Config {
+				cfg := NewProdConfig("test_non_rotating_logger", "USER", gsyslog.LOG_INFO)
+				cfg.Development = true
+				return cfg
+			}(),
+			wantErr: false,
+		},
+		{
+			name: "valid non rotating logger with sampling hook",
+			cfg: func() Config {
+				cfg := NewProdConfig("test_non_rotating_logger", "USER", gsyslog.LOG_INFO)
+				cfg.Sampling.Hook = func(e zapcore.Entry, sd zapcore.SamplingDecision) {}
+				return cfg
+			}(),
+			wantErr: false,
+		},
+		{
+			name: "valid non rotating logger with initial fields",
+			cfg: func() Config {
+				cfg := NewProdConfig("test_non_rotating_logger", "USER", gsyslog.LOG_INFO)
+				cfg.InitialFields = map[string]any{"first": 123, "second": "abc"}
+				return cfg
+			}(),
+			wantErr: false,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			_, f, err := NewLogger(tc.cfg)
+			defer f()
+			if (err != nil) != tc.wantErr {
+				t.Errorf("NewLogger failed\nWantErr: %v\nErr: %v", tc.wantErr, err)
+			}
 		})
 	}
 }
