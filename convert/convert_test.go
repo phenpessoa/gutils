@@ -3,8 +3,6 @@ package convert
 import (
 	"testing"
 	"time"
-
-	"github.com/stretchr/testify/assert"
 )
 
 func TestToInt64(t *testing.T) {
@@ -42,14 +40,4 @@ func TestToInt64(t *testing.T) {
 			}
 		})
 	}
-}
-
-func TestStringToByteSliceUnsafe(t *testing.T) {
-	str := "foo, bar, baz, qux, quux"
-	assert.Equal(t, []byte(str), StringToByteSliceUnsafe(str))
-}
-
-func TestByteSliceToStringUnsafe(t *testing.T) {
-	bs := []byte("foo, bar, baz, qux, quux")
-	assert.Equal(t, "foo, bar, baz, qux, quux", ByteSliceToStringUnsafe(bs))
 }

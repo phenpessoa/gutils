@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"strconv"
 	"time"
-	"unsafe"
 )
 
 // ToInt64 converts from to an int64.
@@ -50,25 +49,4 @@ func ToInt64(from any) (int64, error) {
 	default:
 		return 0, fmt.Errorf("convert: can not convert type %T to int64", t)
 	}
-}
-
-// StringToByteSliceUnsafe converts a string to a byte slice
-// without copying, making this substantially faster
-// and less expensive than doing a direct convertion.
-//
-// Since Go strings are immutable, the bytes returned by StringToByteSliceUnsafe
-// must not be modified.
-//
-// StringToByteSliceUnsafe uses the unsafe package.
-func StringToByteSliceUnsafe(str string) []byte {
-	return *(*[]byte)(unsafe.Pointer(&str))
-}
-
-// ByteSliceToStringUnsafe converts a byte slice to a string
-// without copying, making this substantially faster
-// and less expensive than doing a direct convertion.
-//
-// ByteSliceToStringUnsaf uses the unsafe package.
-func ByteSliceToStringUnsafe(bs []byte) string {
-	return *(*string)(unsafe.Pointer(&bs))
 }
