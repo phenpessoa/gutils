@@ -25,15 +25,15 @@ type Cache[K comparable, V any] struct {
 }
 
 type item[V any] struct {
-	v V
 	t time.Time
+	v V
 }
 
 // Set sets a new value to the Cache cache.
 func (c *Cache[K, V]) Set(k K, v V) {
 	c.locker.Lock()
 	defer c.locker.Unlock()
-	c.cache[k] = item[V]{v, time.Now()}
+	c.cache[k] = item[V]{time.Now(), v}
 }
 
 // Get returns the value in the Cache cache of
@@ -68,7 +68,7 @@ func (c *Cache[K, V]) GetSet(k K, v V) V {
 	if ok {
 		return val.v
 	}
-	c.cache[k] = item[V]{v, time.Now()}
+	c.cache[k] = item[V]{time.Now(), v}
 	return v
 }
 
