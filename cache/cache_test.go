@@ -6,8 +6,6 @@ import (
 	"sync"
 	"testing"
 	"time"
-
-	"github.com/stretchr/testify/assert"
 )
 
 func TestCache(t *testing.T) {
@@ -63,7 +61,7 @@ func TestCache(t *testing.T) {
 			},
 		},
 		{
-			"test gc",
+			"gc",
 			25 * time.Millisecond,
 			func(c *Cache[string, any]) error {
 				c.Set("foo", 1)
@@ -76,7 +74,7 @@ func TestCache(t *testing.T) {
 			},
 		},
 		{
-			"test get set",
+			"get set",
 			0,
 			func(c *Cache[string, any]) error {
 				i := new(int)
@@ -104,7 +102,7 @@ func TestCache(t *testing.T) {
 			},
 		},
 		{
-			"test wipe and len",
+			"wipe and len",
 			0,
 			func(c *Cache[string, any]) error {
 				c.Set("foo", 1)
@@ -124,7 +122,7 @@ func TestCache(t *testing.T) {
 			},
 		},
 		{
-			"test contains",
+			"contains",
 			0,
 			func(c *Cache[string, any]) error {
 				ok := c.Contains("foo")
@@ -145,7 +143,9 @@ func TestCache(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			c := NewCache[string, any](tc.cacheFor)
-			assert.NoError(t, tc.f(c))
+			if err := tc.f(c); err != nil {
+				t.Errorf("\ntest '%s' failed\nerr: %v", tc.name, err)
+			}
 		})
 	}
 }
