@@ -2,7 +2,6 @@ package httputils
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -29,7 +28,6 @@ func TestChiLogger(t *testing.T) {
 	}
 
 	msg := logs.All()[0].Message
-	fmt.Println(msg)
 	if !strings.Contains(msg, "[CHI]") {
 		t.Error("\n[CHI] not found in the logged message")
 	}
