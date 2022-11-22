@@ -2,53 +2,45 @@ package httputils
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"regexp"
+	"strings"
 	"testing"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 )
 
 func TestChiLogger(t *testing.T) {
-	assert := assert.New(t)
-
 	core, logs := observer.New(zap.InfoLevel)
 	logger := zap.New(core)
 
-	router := chi.NewRouter()
-	router.Use(ChiLogger(logger))
-	router.Get("/test", func(w http.ResponseWriter, r *http.Request) {
-		_, _ = w.Write([]byte("test"))
-	})
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodPost, "http://localhost:8080", nil)
+	ChiLogger(logger)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("test"))
+	})).ServeHTTP(w, req)
 
-	ts := httptest.NewServer(router)
-	defer ts.Close()
-
-	client := ts.Client()
-
-	resp, err := client.Get(ts.URL + "/test")
-	if err != nil {
-		panic(err)
+	if logs.Len() != 1 {
+		t.Errorf("\nlen of logs is not 1, it is %d", logs.Len())
+		t.FailNow()
 	}
-	defer resp.Body.Close()
 
-	chiRegex := regexp.MustCompile(`\[CHI\]`)
-	assert.True(chiRegex.MatchString(logs.All()[0].Message))
+	msg := logs.All()[0].Message
+	fmt.Println(msg)
+	if !strings.Contains(msg, "[CHI]") {
+		t.Error("\n[CHI] not found in the logged message")
+	}
 
-	colorString := "\033\\[97;42m 200 \033\\[0m"
-	colorRegex := regexp.MustCompile(colorString)
-	assert.True(colorRegex.MatchString(logs.All()[0].Message))
+	if !strings.Contains(msg, green+" 200 "+reset) {
+		t.Error("\nstatus code not found in the logged message")
+	}
 
-	endpointRegex := regexp.MustCompile(`"/test"`)
-	assert.True(endpointRegex.MatchString(logs.All()[0].Message))
-
-	methodString := "\033\\[97;44m GET     \033\\[0m"
-	methodRegex := regexp.MustCompile(methodString)
-	assert.True(methodRegex.MatchString(logs.All()[0].Message))
+	if !strings.Contains(msg, cyan+" POST    "+reset) {
+		t.Error("\nmethod not found in the logged message")
+	}
 }
 
 func TestReadUserIP(t *testing.T) {
@@ -80,14 +72,14 @@ func TestReadUserIP(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			assert.Equal(t, tc.want, ReadUserIP(tc.req))
+			if got := ReadUserIP(tc.req); got != tc.want {
+				t.Errorf("\ntest '%s' failed\nwant: %v\ngot: %v", tc.name, tc.want, got)
+			}
 		})
 	}
 }
 
 func TestFindMethodColor(t *testing.T) {
-	assert := assert.New(t)
-
 	expectedResults := map[string]string{
 		http.MethodConnect: reset,
 		http.MethodDelete:  red,
@@ -101,13 +93,13 @@ func TestFindMethodColor(t *testing.T) {
 	}
 
 	for method, expected := range expectedResults {
-		assert.Equal(expected, findMethodColor(method))
+		if got := findMethodColor(method); got != expected {
+			t.Errorf("\nmethod '%s' failed\nwant: %v\ngot: %v", method, expected, got)
+		}
 	}
 }
 
 func TestFindStatusCodeColor(t *testing.T) {
-	assert := assert.New(t)
-
 	for _, tc := range []struct {
 		code int
 		want string
@@ -168,7 +160,9 @@ func TestFindStatusCodeColor(t *testing.T) {
 		{http.StatusNotExtended, red},
 		{http.StatusNetworkAuthenticationRequired, red},
 	} {
-		assert.Equal(tc.want, findStatusCodeColor(tc.code))
+		if got := findStatusCodeColor(tc.code); tc.want != got {
+			t.Errorf("\nstatus code '%d' failed\nwant: %v\ngot: %v", tc.code, tc.want, got)
+		}
 	}
 }
 
@@ -209,14 +203,29 @@ func TestAddAllowHeader(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			assert := assert.New(t)
-
 			w := httptest.NewRecorder()
 			AddAllowHeader(r, w, tc.req)
 
-			assert.Equal(http.StatusMethodNotAllowed, w.Result().StatusCode)
+			if res := w.Result().StatusCode; res != http.StatusMethodNotAllowed {
+				t.Errorf("\ntest '%s' failed\nwrong status received: %d", tc.name, res)
+			}
+
 			want := []string{"GET", "PUT", "DELETE", "PATCH"}
-			assert.ElementsMatch(want, w.Result().Header.Values("Allow"))
+			got := w.Result().Header.Values("Allow")
+
+			if len(want) != len(got) {
+				t.Errorf("\ntest '%s' failed\nwrong amount of methods in header\nwant: %v\ngot: %v", tc.name, len(want), len(got))
+			}
+
+		OUTER:
+			for _, w := range want {
+				for _, g := range got {
+					if w == g {
+						continue OUTER
+					}
+				}
+				t.Errorf("\ntest '%s' failed\nmethod '%s' not present in header", tc.name, w)
+			}
 		})
 	}
 }
