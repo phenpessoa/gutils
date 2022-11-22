@@ -20,7 +20,7 @@ func TestChiLogger(t *testing.T) {
 	w := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodPost, "http://localhost:8080", nil)
 	ChiLogger(logger)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("test"))
+		_, _ = w.Write([]byte("test"))
 	})).ServeHTTP(w, req)
 
 	if logs.Len() != 1 {
