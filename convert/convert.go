@@ -18,9 +18,10 @@ import (
 // If from is time.Time, it will return
 // the Unix time.
 //
-// If it is a string, strconv will be used.
+// If from is a string, strconv will be used.
 //
-// No other types are allowed.
+// No other types are allowed and will result
+// in an error.
 func ToInt(from any) (int, error) {
 	return toInteger[int](from, false)
 }
@@ -37,9 +38,10 @@ func ToInt(from any) (int, error) {
 // If from is time.Time, it will return
 // the Unix time.
 //
-// If it is a string, strconv will be used.
+// If from is a string, strconv will be used.
 //
-// No other types are allowed.
+// No other types are allowed and will result
+// in an error.
 func ToInt8(from any) (int8, error) {
 	return toInteger[int8](from, false)
 }
@@ -56,9 +58,10 @@ func ToInt8(from any) (int8, error) {
 // If from is time.Time, it will return
 // the Unix time.
 //
-// If it is a string, strconv will be used.
+// If from is a string, strconv will be used.
 //
-// No other types are allowed.
+// No other types are allowed and will result
+// in an error.
 func ToInt16(from any) (int16, error) {
 	return toInteger[int16](from, false)
 }
@@ -75,9 +78,10 @@ func ToInt16(from any) (int16, error) {
 // If from is time.Time, it will return
 // the Unix time.
 //
-// If it is a string, strconv will be used.
+// If from is a string, strconv will be used.
 //
-// No other types are allowed.
+// No other types are allowed and will result
+// in an error.
 func ToInt32(from any) (int32, error) {
 	return toInteger[int32](from, false)
 }
@@ -94,9 +98,10 @@ func ToInt32(from any) (int32, error) {
 // If from is time.Time, it will return
 // the Unix time.
 //
-// If it is a string, strconv will be used.
+// If from is a string, strconv will be used.
 //
-// No other types are allowed.
+// No other types are allowed and will result
+// in an error.
 func ToInt64(from any) (int64, error) {
 	return toInteger[int64](from, false)
 }
@@ -113,9 +118,10 @@ func ToInt64(from any) (int64, error) {
 // If from is time.Time, it will return
 // the Unix time.
 //
-// If it is a string, strconv will be used.
+// If from is a string, strconv will be used.
 //
-// No other types are allowed.
+// No other types are allowed and will result
+// in an error.
 func ToUint(from any) (uint, error) {
 	return toInteger[uint](from, true)
 }
@@ -132,9 +138,10 @@ func ToUint(from any) (uint, error) {
 // If from is time.Time, it will return
 // the Unix time.
 //
-// If it is a string, strconv will be used.
+// If from is a string, strconv will be used.
 //
-// No other types are allowed.
+// No other types are allowed and will result
+// in an error.
 func ToUint8(from any) (uint8, error) {
 	return toInteger[uint8](from, true)
 }
@@ -151,9 +158,10 @@ func ToUint8(from any) (uint8, error) {
 // If from is time.Time, it will return
 // the Unix time.
 //
-// If it is a string, strconv will be used.
+// If from is a string, strconv will be used.
 //
-// No other types are allowed.
+// No other types are allowed and will result
+// in an error.
 func ToUint16(from any) (uint16, error) {
 	return toInteger[uint16](from, true)
 }
@@ -170,9 +178,10 @@ func ToUint16(from any) (uint16, error) {
 // If from is time.Time, it will return
 // the Unix time.
 //
-// If it is a string, strconv will be used.
+// If from is a string, strconv will be used.
 //
-// No other types are allowed.
+// No other types are allowed and will result
+// in an error.
 func ToUint32(from any) (uint32, error) {
 	return toInteger[uint32](from, true)
 }
@@ -189,9 +198,10 @@ func ToUint32(from any) (uint32, error) {
 // If from is time.Time, it will return
 // the Unix time.
 //
-// If it is a string, strconv will be used.
+// If from is a string, strconv will be used.
 //
-// No other types are allowed.
+// No other types are allowed and will result
+// in an error.
 func ToUint64(from any) (uint64, error) {
 	return toInteger[uint64](from, true)
 }
@@ -208,9 +218,10 @@ func ToUint64(from any) (uint64, error) {
 // If from is time.Time, it will return
 // the Unix time.
 //
-// If it is a string, strconv will be used.
+// If from is a string, strconv will be used.
 //
-// No other types are allowed.
+// No other types are allowed and will result
+// in an error.
 func ToUintptr(from any) (uintptr, error) {
 	return toInteger[uintptr](from, true)
 }
@@ -260,7 +271,6 @@ func toInteger[To strictInteger](from any, unsigned bool) (To, error) {
 		if unsigned {
 			x, err := strconv.ParseUint(t, 10, 64)
 			return To(x), err
-
 		}
 		x, err := strconv.ParseInt(t, 10, 64)
 		return To(x), err
