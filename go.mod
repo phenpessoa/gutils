@@ -5,7 +5,7 @@ go 1.19
 require (
 	github.com/go-chi/chi/v5 v5.0.7
 	github.com/hashicorp/go-syslog v1.0.0
-	go.uber.org/zap v1.23.0
+	go.uber.org/zap v1.24.0
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
 )
 
