@@ -5,11 +5,11 @@ import (
 	"time"
 )
 
-// NewCache creates a new Cache.
+// New creates a new Cache.
 // cacheFor is the amount of time the value will be cached, set to 0 to cache forever.
 // cacheFor is also the tick period of the GC.
 // The caller can manually call the GC at any time using the TickGC method.
-func NewCache[K comparable, V any](cacheFor time.Duration) *Cache[K, V] {
+func New[K comparable, V any](cacheFor time.Duration) *Cache[K, V] {
 	c := &Cache[K, V]{cache: make(map[K]item[V]), cacheFor: cacheFor}
 	if cacheFor > 0 {
 		go c.gc()
@@ -25,15 +25,15 @@ type Cache[K comparable, V any] struct {
 }
 
 type item[V any] struct {
-	t time.Time
-	v V
+	v    V
+	nsec int64
 }
 
 // Set sets a new value to the Cache cache.
 func (c *Cache[K, V]) Set(k K, v V) {
 	c.locker.Lock()
 	defer c.locker.Unlock()
-	c.cache[k] = item[V]{time.Now(), v}
+	c.cache[k] = item[V]{v, time.Now().UnixNano()}
 }
 
 // Get returns the value in the Cache cache of
@@ -68,7 +68,7 @@ func (c *Cache[K, V]) GetSet(k K, v V) V {
 	if ok {
 		return val.v
 	}
-	c.cache[k] = item[V]{time.Now(), v}
+	c.cache[k] = item[V]{v, time.Now().UnixNano()}
 	return v
 }
 
@@ -92,7 +92,7 @@ func (c *Cache[K, V]) Len() int {
 func (c *Cache[K, V]) TickGC() {
 	c.locker.Lock()
 	for k, v := range c.cache {
-		if time.Since(v.t) > c.cacheFor {
+		if time.Since(time.Unix(0, v.nsec)) > c.cacheFor {
 			delete(c.cache, k)
 		}
 	}
