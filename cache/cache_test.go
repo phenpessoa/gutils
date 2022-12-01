@@ -142,7 +142,7 @@ func TestCache(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			c := NewCache[string, any](tc.cacheFor)
+			c := New[string, any](tc.cacheFor)
 			if err := tc.f(c); err != nil {
 				t.Errorf("\ntest '%s' failed\nerr: %v", tc.name, err)
 			}
