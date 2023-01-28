@@ -1,4 +1,4 @@
-module github.com/Pedro-Pessoa/gutils
+module github.com/phenpessoa/gutils
 
 go 1.19
 
