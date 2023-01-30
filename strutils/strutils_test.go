@@ -12,7 +12,16 @@ import (
 
 const testStrLen = 100
 
-var sink string
+var (
+	sink   string
+	sinkMu sync.Mutex
+)
+
+func setSink(str string) {
+	sinkMu.Lock()
+	sink = str
+	sinkMu.Unlock()
+}
 
 func cryptoRandNoCache(n int) string {
 	return cryptoRandFromStringNoCache(n, chars)
@@ -48,7 +57,7 @@ func Benchmark_CryptoRand_Parallel(b *testing.B) {
 	b.ReportAllocs()
 	b.RunParallel(func(p *testing.PB) {
 		for p.Next() {
-			sink = CryptoRand(testStrLen)
+			setSink(CryptoRand(testStrLen))
 		}
 	})
 }
@@ -57,7 +66,7 @@ func Benchmark_CryptoRand_Parallel_NoCache(b *testing.B) {
 	b.ReportAllocs()
 	b.RunParallel(func(p *testing.PB) {
 		for p.Next() {
-			sink = cryptoRandNoCache(testStrLen)
+			setSink(cryptoRandNoCache(testStrLen))
 		}
 	})
 }
