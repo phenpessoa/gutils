@@ -180,3 +180,8 @@ func TestPseudoThreadSafety(t *testing.T) {
 func TestCryptoThreadSafety(t *testing.T) {
 	testThreadSafety(CryptoRand)
 }
+
+func TestZero(t *testing.T) {
+	sink = Rand(0)
+	sink = CryptoRand(0)
+}

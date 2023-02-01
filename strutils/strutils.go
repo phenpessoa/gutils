@@ -24,9 +24,12 @@ func Rand(n int) string {
 //
 // The characters used to generate the string will be retrivied from chars.
 func RandFromString(n int, chars string) string {
+	if n <= 0 {
+		return ""
+	}
 	s := make([]byte, n)
 	genRngChars(s, chars, rand.Int63)
-	return *(*string)(unsafe.Pointer(&s))
+	return unsafe.String(&s[0], len(s))
 }
 
 // CryptoRand generates a cryptographically random string with len n.
@@ -40,9 +43,12 @@ func CryptoRand(n int) string {
 //
 // The characters used to generate the string will be retrivied from chars.
 func CryptoRandFromString(n int, chars string) string {
+	if n <= 0 {
+		return ""
+	}
 	s := make([]byte, n)
 	genRngChars(s, chars, cRandInt64)
-	return *(*string)(unsafe.Pointer(&s))
+	return unsafe.String(&s[0], len(s))
 }
 
 var (
