@@ -30,7 +30,7 @@ func cryptoRandNoCache(n int) string {
 func cryptoRandFromStringNoCache(n int, chars string) string {
 	s := make([]byte, n)
 	genRngChars(s, chars, cRandInt64NoCache)
-	return *(*string)(unsafe.Pointer(&s))
+	return unsafe.String(&s[0], len(s))
 }
 
 func cRandInt64NoCache() int64 {
