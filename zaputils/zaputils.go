@@ -222,6 +222,9 @@ type Config struct {
 	// for WarnLevel and above logs in development
 	// and ErrorLevel and above in production.
 	DisableStacktrace bool
+
+	// ExtraCores will be appended to the core tee.
+	ExtraCores []zapcore.Core
 }
 
 // NewLogger creates a zap Logger that duplicates log entries into 3 or 2 underlying cores.
@@ -334,10 +337,12 @@ func NewLogger(c Config) (*zap.Logger, func(), error) {
 		sCore = zapcore.NewCore(sEncoder, sWriter, c.SysLevel)
 	}
 
-	cores := []zapcore.Core{cCore, fCore}
+	cores := make([]zapcore.Core, 0, len(c.ExtraCores)+3)
+	cores = append(cores, cCore, fCore)
 	if sCore != nil {
 		cores = append(cores, sCore)
 	}
+	cores = append(cores, c.ExtraCores...)
 
 	opts := make([]zap.Option, 1, 4)
 	opts[0] = zap.ErrorOutput(errSink)
