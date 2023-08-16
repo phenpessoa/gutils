@@ -6,7 +6,8 @@ import (
 	"math/bits"
 	"math/rand"
 	"sync"
-	"unsafe"
+
+	"github.com/phenpessoa/gutils/unsafex"
 )
 
 const chars = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -29,7 +30,7 @@ func RandFromString(n int, chars string) string {
 	}
 	s := make([]byte, n)
 	genRngChars(s, chars, rand.Int63)
-	return unsafe.String(&s[0], len(s))
+	return unsafex.String(s)
 }
 
 // CryptoRand generates a cryptographically random string with len n.
@@ -48,7 +49,7 @@ func CryptoRandFromString(n int, chars string) string {
 	}
 	s := make([]byte, n)
 	genRngChars(s, chars, cRandInt64)
-	return unsafe.String(&s[0], len(s))
+	return unsafex.String(s)
 }
 
 var (

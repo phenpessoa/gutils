@@ -7,7 +7,8 @@ import (
 	"math"
 	"sync"
 	"testing"
-	"unsafe"
+
+	"github.com/phenpessoa/gutils/unsafex"
 )
 
 const testStrLen = 100
@@ -30,7 +31,7 @@ func cryptoRandNoCache(n int) string {
 func cryptoRandFromStringNoCache(n int, chars string) string {
 	s := make([]byte, n)
 	genRngChars(s, chars, cRandInt64NoCache)
-	return unsafe.String(&s[0], len(s))
+	return unsafex.String(s)
 }
 
 func cRandInt64NoCache() int64 {
