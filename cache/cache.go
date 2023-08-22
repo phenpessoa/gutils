@@ -6,9 +6,9 @@ import (
 )
 
 // New creates a new Cache.
-// cacheFor is the amount of time the value will be cached, set to 0 to cache forever.
-// cacheFor is also the tick period of the GC.
-// The caller can manually call the GC at any time using the TickGC method.
+// cacheFor is the amount of time the value will be cached, set to 0 to cache
+// forever. cacheFor is also the tick period of the GC. The caller can manually
+// call the GC at any time using the TickGC method.
 func New[K comparable, V any](cacheFor time.Duration) *Cache[K, V] {
 	c := &Cache[K, V]{cache: make(map[K]item[V]), cacheFor: cacheFor}
 	if cacheFor > 0 {
@@ -104,4 +104,36 @@ func (c *Cache[K, V]) gc() {
 	for range ticker.C {
 		c.TickGC()
 	}
+}
+
+// Lock locks rw for writing. If the lock is already locked for reading or
+// writing, Lock blocks until the lock is available.
+func (c *Cache[K, V]) Lock() {
+	c.locker.Lock()
+}
+
+// Unlock unlocks rw for writing. It is a run-time error if rw is not locked for
+// writing on entry to Unlock.
+//
+// As with Mutexes, a locked RWMutex is not associated with a particular
+// goroutine. One goroutine may RLock (Lock) a RWMutex and then arrange for
+// another goroutine to RUnlock (Unlock) it.
+func (c *Cache[K, V]) Unlock() {
+	c.locker.Unlock()
+}
+
+// RLock locks rw for reading.
+//
+// It should not be used for recursive read locking; a blocked Lock call
+// excludes new readers from acquiring the lock. See the documentation on the
+// RWMutex type.
+func (c *Cache[K, V]) RLock() {
+	c.locker.RLock()
+}
+
+// RUnlock undoes a single RLock call; it does not affect other simultaneous
+// readers. It is a run-time error if rw is not locked for reading on entry to
+// RUnlock.
+func (c *Cache[K, V]) RUnlock() {
+	c.locker.RUnlock()
 }
