@@ -7,7 +7,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"go.uber.org/zap"
 )
@@ -112,42 +111,4 @@ var methods = [9]string{
 	http.MethodOptions, http.MethodPatch,
 	http.MethodPost, http.MethodPut,
 	http.MethodTrace,
-}
-
-// AddAllowHeader adds the Allow header to w and writes
-// http.StatusMethodNotAllowed to the header.
-//
-// No headers can be added/set after AddAllowHeader is called.
-//
-// AddAllowHeader will not work if w's WriteHeader method was called before it.
-//
-// The caller can still write to w after calling AddAllowHeader.
-//
-// https://www.rfc-editor.org/rfc/rfc7231#section-6.5.5
-func AddAllowHeader(r chi.Router, w http.ResponseWriter, req *http.Request) {
-	rctx := chi.RouteContext(req.Context())
-
-	routePath := rctx.RoutePath
-	if routePath == "" {
-		if req.URL.RawPath != "" {
-			routePath = req.URL.RawPath
-		} else {
-			routePath = req.URL.Path
-		}
-		if routePath == "" {
-			routePath = "/"
-		}
-	}
-
-	if rctx.RouteMethod == "" {
-		rctx.RouteMethod = req.Method
-	}
-
-	for _, m := range methods {
-		if r.Match(rctx, m, routePath) {
-			w.Header().Add("Allow", m)
-		}
-	}
-
-	w.WriteHeader(http.StatusMethodNotAllowed)
 }

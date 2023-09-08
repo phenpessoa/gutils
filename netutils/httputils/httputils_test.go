@@ -1,13 +1,11 @@
 package httputils
 
 import (
-	"context"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
 
-	"github.com/go-chi/chi/v5"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 )
@@ -161,69 +159,5 @@ func TestFindStatusCodeColor(t *testing.T) {
 		if got := findStatusCodeColor(tc.code); tc.want != got {
 			t.Errorf("\nstatus code '%d' failed\nwant: %v\ngot: %v", tc.code, tc.want, got)
 		}
-	}
-}
-
-func TestAddAllowHeader(t *testing.T) {
-	r := chi.NewRouter()
-	r.Get("/", func(w http.ResponseWriter, r *http.Request) { _, _ = w.Write([]byte(`ok`)) })
-	r.Put("/", func(w http.ResponseWriter, r *http.Request) { _, _ = w.Write([]byte(`ok`)) })
-	r.Delete("/", func(w http.ResponseWriter, r *http.Request) { _, _ = w.Write([]byte(`ok`)) })
-	r.Patch("/", func(w http.ResponseWriter, r *http.Request) { _, _ = w.Write([]byte(`ok`)) })
-
-	for _, tc := range []struct {
-		name string
-		req  *http.Request
-	}{
-		{
-			"filled rawpath",
-			func() *http.Request {
-				req := httptest.NewRequest("POST", "/", nil)
-				rctx := chi.NewRouteContext()
-				rctx.RoutePath = ""
-				req.URL.RawPath = "/"
-				req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
-				return req
-			}(),
-		},
-		{
-			"empty rawpath",
-			func() *http.Request {
-				req := httptest.NewRequest("POST", "/", nil)
-				rctx := chi.NewRouteContext()
-				rctx.RoutePath = ""
-				req.URL.RawPath = ""
-				req.URL.Path = ""
-				rctx.RouteMethod = ""
-				req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
-				return req
-			}(),
-		},
-	} {
-		t.Run(tc.name, func(t *testing.T) {
-			w := httptest.NewRecorder()
-			AddAllowHeader(r, w, tc.req)
-
-			if res := w.Result().StatusCode; res != http.StatusMethodNotAllowed {
-				t.Errorf("\ntest '%s' failed\nwrong status received: %d", tc.name, res)
-			}
-
-			want := []string{"GET", "PUT", "DELETE", "PATCH"}
-			got := w.Result().Header.Values("Allow")
-
-			if len(want) != len(got) {
-				t.Errorf("\ntest '%s' failed\nwrong amount of methods in header\nwant: %v\ngot: %v", tc.name, len(want), len(got))
-			}
-
-		OUTER:
-			for _, w := range want {
-				for _, g := range got {
-					if w == g {
-						continue OUTER
-					}
-				}
-				t.Errorf("\ntest '%s' failed\nmethod '%s' not present in header", tc.name, w)
-			}
-		})
 	}
 }
