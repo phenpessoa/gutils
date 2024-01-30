@@ -23,9 +23,16 @@ func (i64 Int64) MarshalJSON() ([]byte, error) {
 // UnmarshalJSON implements the json.Unmarshaler interface for Int64 type.
 // It unmarshals a JSON value into an Int64 value. The JSON value can either be
 // a string or a number.
+//
+// An empty string is considered valid and will make Int64 be zero.
 func (i64 *Int64) UnmarshalJSON(b []byte) error {
 	str := unsafex.String(b)
 	str = strings.ReplaceAll(str, `"`, "")
+
+	if str == "" {
+		*i64 = 0
+		return nil
+	}
 
 	parsed, err := strconv.ParseInt(str, 10, 64)
 	if err != nil {
